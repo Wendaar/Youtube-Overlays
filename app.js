@@ -16,6 +16,7 @@ const org=(params.get('org')??'PHM').toUpperCase();
 const API_BASE=location.pathname.startsWith('/broadcast/')?'/api/broadcast':'https://hms-insights-five.vercel.app/api/broadcast';
 const state = { games: [], teams: [], selectedId: params.get("game"), date: null, preview: "overlay", filter:params.get('filter')??'Today', readAt:null };
 let refreshing=false,lastSuccess=0,lastVisual='',pollTimer;
+let previewObserver;
 document.body.dataset.org=org;
 if(mode==='overlay'||mode==='thumbnail')document.body.className='render-mode';
 function apiUrl(query){const url=new URL(API_BASE,location.origin);url.search=new URLSearchParams({org,...query});return url.href;}
@@ -31,7 +32,7 @@ async function loadGame(id){
 async function loadDay(){
   const data=await apiRequest({filter:state.filter});
   const games=data.items.map(item=>({ID:item.gameId,Date:item.playedOn?.split('-').reverse().join('. ')??'',DateISO:item.playedOn,Time:item.startTime?.slice(0,5)??'',
-    'Home Team':item.home.name??item.gameId,'Away Team':item.away.name??'',Group:org,Venue:'',warnings:[],_thin:true}));
+    'Home Team':item.home.name??'Domácí tým · podrobnosti po výběru','Away Team':item.away.name??'Hosté · podrobnosti po výběru',Group:org,Venue:'Podrobnosti po výběru zápasu',warnings:[],_thin:true}));
   const detailed=state.games.filter(g=>!g._thin);
   state.games=[...detailed,...games.filter(g=>!detailed.some(d=>d.ID.toLowerCase()===g.ID.toLowerCase()))];
   state.hasMore=data.hasMore;
@@ -240,6 +241,12 @@ function renderControl() {
 }
 
 function wireControl() {
+  previewObserver?.disconnect();
+  const previewBox=document.querySelector('.preview-frame');
+  if(previewBox){
+    const resize=()=>previewBox.style.setProperty('--preview-scale',String(previewBox.clientWidth/1920));
+    resize();previewObserver=new ResizeObserver(resize);previewObserver.observe(previewBox);
+  }
   document.querySelector('#game-form')?.addEventListener('submit',event=>{
     event.preventDefault();const status=document.querySelector('#connection-status');
     try{const input=parseGameInput(document.querySelector('#game-input').value,document.querySelector('#org').value);const url=new URL(location.href);url.search=new URLSearchParams({org:input.org,game:input.gameId,source:'hms'});location.assign(url);}
