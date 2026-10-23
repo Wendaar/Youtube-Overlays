@@ -20,7 +20,7 @@ document.body.dataset.org=org;
 if(mode==='overlay'||mode==='thumbnail')document.body.className='render-mode';
 function apiUrl(query){const url=new URL(API_BASE,location.origin);url.search=new URLSearchParams({org,...query});return url.href;}
 async function apiRequest(query){
-  const response=await fetch(apiUrl(query),{credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(16000)});
+  const response=await fetch(apiUrl(query),{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(16000)});
   const data=await response.json();if(!response.ok)throw new Error(data.error||'HMS data nejsou dostupná.');
   if(data.org!==org)throw new Error('HMS vrátilo jinou organizaci.');return data;
 }
